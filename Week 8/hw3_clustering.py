@@ -47,28 +47,56 @@ class project3(object):
 
     def EMGMM(self):
         # EM for the GMM
-        pass
+        #Sigma = numpy.zeros((self.col,self.col,self.Cluster))
+        iden = numpy.identity(self.col)
+        Sigma = numpy.dstack([iden]*self.Cluster)
+        pi = numpy.ones(self.Cluster) * 1.0 / self.Cluster # Uniform distribution
+        Phi = numpy.zeros((self.row,self.Cluster))
 
+        init_mu = numpy.random.randint(0,self.row,size=self.Cluster) # Pick 5 random data points
+        mu = self.X[init_mu]
 
-'''
-def KMeans(data):
-    # perform the algorithm with 5 clusters and 10 iterations...you may try others for testing purposes, but submit 5 and 10 respectively
+        for iter in range(self.Iteration):
+            # E-step
+            for k in range(self.Cluster):
+                invSigma = numpy.linalg.inv(Sigma[:,:,k])
+                detSigma = (numpy.linalg.det(Sigma[:,:,k])) ** (-0.5)
 
-    filename = "centroids-" + str(i + 1) + ".csv"  # "i" would be each iteration
-    np.savetxt(filename, centerslist, delimiter=",")
+                for i in range(self.row):
+                    xi = self.X[i]
+                    inbracket = numpy.dot(numpy.dot((xi-mu[k]).transpose(),invSigma),(xi-mu[k]))
+                    Phi[i,k] = pi[k] * ((2*numpy.pi)**(-self.col/2.0)) * detSigma * numpy.exp(-0.5*inbracket)
 
+                for i in range(self.row):
+                    sum = Phi[i].sum()
+                    Phi[i] = 1.0 * Phi[i] / sum
 
-def EMGMM(data):
-    filename = "pi-" + str(i + 1) + ".csv"
-    np.savetxt(filename, pi, delimiter=",")
-    filename = "mu-" + str(i + 1) + ".csv"
-    np.savetxt(filename, mu, delimiter=",")  # this must be done at every iteration
+            # M-step
+            nk = numpy.sum(Phi,axis=0)
+            pi = nk *1.0 / self.row
 
+            for k in range(self.Cluster):
+                mu[k] = numpy.dot(Phi[:,k].transpose(),self.X) * 1.0 / nk[k]
 
-for j in range(k):  # k is the number of clusters
-    filename = "Sigma-" + str(j + 1) + "-" + str(i + 1) + ".csv"  # this must be done 5 times (or the number of clusters) for each iteration
-    np.savetxt(filename, sigma[j], delimiter=",")
-'''
+            for k in range(self.Cluster):
+                inbracket = numpy.zeros(self.col)
+                sum = numpy.zeros((self.col,self.col))
+
+                for i in range(self.row):
+                    xi = self.X[i]
+                    inbracket = xi - mu[k]
+                    sum += Phi[i,k] * numpy.dot(inbracket.transpose(),inbracket)
+
+                Sigma[:,:,k] = sum *1.0 / nk[k]
+
+            filename = "pi-" + str(iter + 1) + ".csv"
+            numpy.savetxt(filename, pi, delimiter=",")
+            filename = "mu-" + str(iter + 1) + ".csv"
+            numpy.savetxt(filename, mu, delimiter=",")  # this must be done at every iteration
+
+            for k in range(self.Cluster):
+                filename = "Sigma-" + str(k + 1) + "-" + str(iter + 1) + ".csv" 
+                numpy.savetxt(filename, Sigma[:,:,k], delimiter=",")
 
 
 
